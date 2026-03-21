@@ -97,7 +97,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { model: 'solar-pro2', temperature: 0.2, response_format: { type: 'json_schema', json_schema: { name: 'first_pass', schema: { type: 'object', properties: { title:{type:'string'}, one_line:{type:'string'}, problem:{type:'string'}, method:{type:'string'}, results:{type:'string'}, limitations:{type:'string'}, key_numbers:{type:'array',items:{type:'string'}}, open_questions:{type:'array',items:{type:'string'}} }, required:['title','one_line','problem','method','results','limitations','key_numbers','open_questions'], additionalProperties:false } } }, messages: [ { role:'system', content:`너는 논문 분석가다. ${$json.targetLanguage}로 답하고 과장 금지.` }, { role:'user', content:`focus=${$json.focus}\nURL=${$json.url}\n본문:\n${($json.body || '').toString().slice(0,12000)}` } ] } }}",
+        "jsonBody": "={{$json.upstage_payload}}",
         "options": {
           "response": {
             "responseFormat": "json"
@@ -145,7 +145,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { model:'solar-pro2', temperature:0.1, response_format: { type:'json_schema', json_schema:{ name:'final_pack', schema:{ type:'object', properties:{ source_url:{type:'string'}, final_summary:{type:'object',properties:{ title:{type:'string'}, one_line:{type:'string'}, problem:{type:'string'}, method:{type:'string'}, results:{type:'string'}, limitations:{type:'string'} }, required:['title','one_line','problem','method','results','limitations'], additionalProperties:false }, quality_score:{type:'number'}, confidence:{type:'string'}, improvement_notes:{type:'array',items:{type:'string'}}, next_actions:{type:'array',items:{type:'string'}} }, required:['source_url','final_summary','quality_score','confidence','improvement_notes','next_actions'], additionalProperties:false } } }, messages:[ { role:'system', content:'너는 수석 리뷰어다. 초안 요약을 비판적으로 개선하라.' }, { role:'user', content:`원본 URL: ${$json.url}\n사용자 피드백: ${$json.feedback || '없음'}\n초안 요약(JSON): ${JSON.stringify($json.first_pass)}\n요구사항: 숫자/조건 보존, 모호성 줄이기, 실험 관점 액션 아이템 강화.` } ] } }}",
+        "jsonBody": "={{$json.upstage_payload}}",
         "options": {
           "response": {
             "responseFormat": "json"
@@ -185,6 +185,32 @@
       "position": [
         1980,
         300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const lang=$json.targetLanguage||'ko';\nconst focus=$json.focus||'method,results,limitations';\nconst url=$json.url||'n/a';\nconst content=String($json.body || $json.data || $json.content || '').slice(0,12000);\nconst payload={\n model:'solar-pro2', temperature:0.2,\n response_format:{type:'json_schema',json_schema:{name:'first_pass',schema:{type:'object',properties:{title:{type:'string'},one_line:{type:'string'},problem:{type:'string'},method:{type:'string'},results:{type:'string'},limitations:{type:'string'},key_numbers:{type:'array',items:{type:'string'}},open_questions:{type:'array',items:{type:'string'}}},required:['title','one_line','problem','method','results','limitations','key_numbers','open_questions'],additionalProperties:false}}},\n messages:[{role:'system',content:'너는 논문 분석가다. '+lang+'로 답하고 과장 금지.'},{role:'user',content:'focus='+focus+'\\nURL='+url+'\\n본문:\\n'+content}]\n};\nreturn [{json:{...$json, upstage_payload:payload}}];"
+      },
+      "id": "Build_First_Pass_Payload",
+      "name": "Build First Pass Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1080,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload={\n model:'solar-pro2', temperature:0.1,\n response_format:{ type:'json_schema', json_schema:{ name:'final_pack', schema:{ type:'object', properties:{ source_url:{type:'string'}, final_summary:{type:'object',properties:{ title:{type:'string'}, one_line:{type:'string'}, problem:{type:'string'}, method:{type:'string'}, results:{type:'string'}, limitations:{type:'string'} }, required:['title','one_line','problem','method','results','limitations'], additionalProperties:false }, quality_score:{type:'number'}, confidence:{type:'string'}, improvement_notes:{type:'array',items:{type:'string'}}, next_actions:{type:'array',items:{type:'string'}} }, required:['source_url','final_summary','quality_score','confidence','improvement_notes','next_actions'], additionalProperties:false } } },\n messages:[\n  {role:'system',content:'너는 수석 리뷰어다. 초안 요약을 비판적으로 개선하라.'},\n  {role:'user',content:'원본 URL: '+($json.url||'n/a')+'\\n사용자 피드백: '+($json.feedback||'없음')+'\\n초안 요약(JSON): '+JSON.stringify($json.first_pass||{})+'\\n요구사항: 숫자/조건 보존, 모호성 줄이기, 실험 관점 액션 아이템 강화.'}\n ]\n};\nreturn [{json:{...$json, upstage_payload:payload}}];"
+      },
+      "id": "Build_Refine_Payload",
+      "name": "Build Refine Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1530,
+        140
       ]
     }
   ],
@@ -226,7 +252,7 @@
       "main": [
         [
           {
-            "node": "LLM First Pass",
+            "node": "Build First Pass Payload",
             "type": "main",
             "index": 0
           }
@@ -248,7 +274,7 @@
       "main": [
         [
           {
-            "node": "LLM Refine with Feedback",
+            "node": "Build Refine Payload",
             "type": "main",
             "index": 0
           }
@@ -280,6 +306,28 @@
     "Collect": {
       "main": [
         []
+      ]
+    },
+    "Build First Pass Payload": {
+      "main": [
+        [
+          {
+            "node": "LLM First Pass",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Refine Payload": {
+      "main": [
+        [
+          {
+            "node": "LLM Refine with Feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
