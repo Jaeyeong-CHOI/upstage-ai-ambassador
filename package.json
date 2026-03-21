@@ -6,6 +6,7 @@
   "scripts": {
     "lint:workflows": "node scripts/validate-workflows.js",
     "test:fixtures": "node scripts/test-fixtures.js",
-    "check": "npm run lint:workflows && npm run test:fixtures"
+    "check:templates": "node scripts/check-template-sync.js",
+    "check": "npm run lint:workflows && npm run test:fixtures && npm run check:templates"
   }
 }
