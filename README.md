@@ -12,7 +12,8 @@
 
 ## 포함 파일
 
-- `workflow.upstage-hf-paper-summarizer.json` : n8n import용 워크플로우
+- `workflow.upstage-hf-paper-summarizer.json` : 기본 워크플로우 (env 우선 + 하드코드 fallback)
+- `workflow.upstage-hf-paper-summarizer-advanced.json` : 2단계 요약 + 피드백 반영 + 품질점수
 - `.env.example` : 환경변수 템플릿 (실제 키 제외)
 - `blog-post.md` : 제작 과정을 정리한 블로그 포스트 초안
 
@@ -37,6 +38,8 @@ UPSTAGE_API_KEY=your_upstage_api_key
 
 ## 3) 테스트 호출
 
+기본 버전:
+
 ```bash
 curl -X POST "https://<YOUR_N8N_HOST>/webhook/hf-paper-summarize" \
   -H "Content-Type: application/json" \
@@ -44,6 +47,22 @@ curl -X POST "https://<YOUR_N8N_HOST>/webhook/hf-paper-summarize" \
     "targetLanguage": "ko",
     "urls": [
       "https://huggingface.co/papers/2403.12345"
+    ]
+  }'
+```
+
+고급 버전(피드백 반영):
+
+```bash
+curl -X POST "https://<YOUR_N8N_HOST>/webhook/hf-paper-summarize-advanced" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "targetLanguage": "ko",
+    "focus": "method,ablation,limitations",
+    "feedback": "수치와 실험 조건을 더 강조하고, 재현 난이도를 평가해줘",
+    "urls": [
+      "https://huggingface.co/papers/2403.12345",
+      "https://huggingface.co/papers/2402.01234"
     ]
   }'
 ```
