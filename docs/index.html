@@ -6,179 +6,215 @@
   <title>Upstage n8n JSON Builder</title>
   <style>
     :root {
-      --bg-1: #070b1a;
-      --bg-2: #121a38;
-      --accent-1: #7c5cff;
-      --accent-2: #33d1ff;
-      --text: #f3f5ff;
-      --muted: #b8bfd8;
-      --card: rgba(15, 20, 42, 0.72);
-      --border: rgba(130, 156, 255, 0.24);
+      --bg: #f7f8fb;
+      --panel: #ffffff;
+      --line: #e7e9f0;
+      --text: #1f2430;
+      --muted: #6f7687;
+      --primary: #5b5cf0;
+      --primary-weak: #eeedff;
     }
-
     * { box-sizing: border-box; }
-
     body {
       margin: 0;
       font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       color: var(--text);
-      background:
-        radial-gradient(1200px 500px at -10% -20%, rgba(51, 209, 255, 0.22), transparent 60%),
-        radial-gradient(1000px 500px at 110% -30%, rgba(124, 92, 255, 0.24), transparent 55%),
-        linear-gradient(160deg, var(--bg-1), var(--bg-2));
-      min-height: 100vh;
-      padding: 36px 16px;
+      background: var(--bg);
     }
 
-    .container {
-      max-width: 920px;
-      margin: 0 auto;
-    }
-
-    .hero {
-      border: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(31, 40, 83, 0.55), rgba(12, 17, 36, 0.65));
-      backdrop-filter: blur(8px);
-      border-radius: 20px;
-      padding: 28px;
-      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
-      margin-bottom: 16px;
-    }
-
-    .brand {
-      display: inline-flex;
+    .topbar {
+      height: 56px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+      display: flex;
       align-items: center;
-      gap: 10px;
-      font-weight: 800;
-      letter-spacing: .04em;
-      margin-bottom: 12px;
+      padding: 0 18px;
+      gap: 24px;
+      font-size: 14px;
+    }
+    .brand { font-weight: 700; }
+    .topnav { display: flex; gap: 18px; color: var(--muted); }
+    .topnav .active { color: var(--text); font-weight: 600; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      min-height: calc(100vh - 56px);
     }
 
-    .logo-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
-      box-shadow: 0 0 16px rgba(124, 92, 255, 0.9);
+    .sidebar {
+      border-right: 1px solid var(--line);
+      background: #fff;
+      padding: 16px 12px;
+    }
+    .side-title {
+      font-size: 12px;
+      color: var(--muted);
+      margin: 8px 8px 6px;
+      text-transform: uppercase;
+      letter-spacing: .02em;
+    }
+    .side-item {
+      padding: 9px 10px;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #42485b;
+      margin: 2px 0;
+    }
+    .side-item.active {
+      background: var(--primary-weak);
+      color: #3d40d4;
+      font-weight: 600;
+    }
+
+    .content {
+      padding: 28px;
+      max-width: 980px;
+      width: 100%;
     }
 
     h1 {
       margin: 0;
-      font-size: clamp(24px, 4vw, 40px);
-      line-height: 1.15;
+      font-size: 30px;
+      letter-spacing: -0.02em;
     }
+    .desc { color: var(--muted); font-size: 14px; margin: 10px 0 18px; }
 
-    .subtitle {
-      margin-top: 12px;
-      color: var(--muted);
-      font-size: 15px;
-    }
-
-    .panel {
-      border: 1px solid var(--border);
-      background: var(--card);
-      backdrop-filter: blur(8px);
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
-    }
-
-    label {
-      display: block;
-      font-weight: 700;
-      margin: 10px 0 8px;
-    }
-
-    input, select {
-      width: 100%;
-      padding: 12px 13px;
-      border-radius: 10px;
-      border: 1px solid rgba(152, 173, 255, 0.35);
-      background: rgba(10, 14, 29, 0.72);
-      color: var(--text);
-      outline: none;
-    }
-
-    input:focus, select:focus {
-      border-color: var(--accent-2);
-      box-shadow: 0 0 0 3px rgba(51, 209, 255, 0.18);
-    }
-
-    button {
-      margin-top: 14px;
-      width: 100%;
-      border: 0;
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
       border-radius: 12px;
-      padding: 12px 16px;
-      font-size: 15px;
-      font-weight: 700;
-      color: #081022;
-      background: linear-gradient(120deg, var(--accent-2), var(--accent-1));
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .card-head {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-body { padding: 16px; }
+
+    label { display:block; font-size:13px; color:#3f4556; margin-bottom:6px; font-weight:600; }
+    select,input {
+      width: 100%;
+      border: 1px solid #d9deea;
+      border-radius: 10px;
+      padding: 11px 12px;
+      font-size: 14px;
+      background: #fff;
+      margin-bottom: 12px;
+    }
+    select:focus,input:focus { outline: none; border-color: #9da6ff; box-shadow: 0 0 0 3px #eef0ff; }
+
+    .btn {
+      border: 0;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 600;
+      border-radius: 10px;
+      padding: 11px 14px;
       cursor: pointer;
-      transition: transform .12s ease, box-shadow .12s ease;
-      box-shadow: 0 12px 24px rgba(51, 209, 255, 0.28);
     }
+    .btn:hover { filter: brightness(.96); }
 
-    button:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 16px 30px rgba(124, 92, 255, 0.32);
-    }
-
-    .muted {
-      color: var(--muted);
-      font-size: 13px;
-      margin-top: 8px;
-      line-height: 1.45;
-    }
-
+    .muted { color: var(--muted); font-size: 12px; line-height: 1.45; margin-top: 8px; }
     code {
-      background: rgba(255, 255, 255, 0.1);
-      padding: 2px 7px;
-      border-radius: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: #d8e9ff;
+      font-family: ui-monospace,SFMono-Regular,Menlo,monospace;
+      font-size: 12px;
+      background: #f3f5fb;
+      border: 1px solid #e3e7f3;
+      border-radius: 6px;
+      padding: 2px 6px;
     }
 
-    .footer {
-      margin-top: 14px;
-      color: var(--muted);
-      font-size: 12px;
-      text-align: center;
+    .simple-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .simple-table th, .simple-table td {
+      border-top: 1px solid var(--line);
+      padding: 10px 8px;
+      text-align: left;
+    }
+    .simple-table th { color: #5b6378; font-weight: 600; background: #fafbfe; }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .content { padding: 16px; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <section class="hero">
-      <div class="brand">
-        <span class="logo-dot" aria-hidden="true"></span>
-        <span>UPSTAGE</span>
-      </div>
-      <h1>n8n Workflow JSON Builder</h1>
-      <p class="subtitle">
-        Upstage 스타일의 간결한 빌더 페이지. API 키를 브라우저에서만 치환하고,
-        선택한 워크플로우 JSON을 바로 다운로드합니다.
-      </p>
-    </section>
+  <header class="topbar">
+    <div class="brand">Upstage Console</div>
+    <nav class="topnav">
+      <span>Documentation</span>
+      <span>API Reference</span>
+      <span>Playground</span>
+      <span class="active">Dashboard</span>
+    </nav>
+  </header>
 
-    <section class="panel">
-      <label for="workflow">워크플로우 선택</label>
-      <select id="workflow">
-        <option value="workflow.upstage-hf-paper-summarizer.json">Basic</option>
-        <option value="workflow.upstage-hf-paper-summarizer-advanced.json">Advanced + Feedback</option>
-        <option value="workflow.research-orchestrator-pro.json">Research Orchestrator Pro</option>
-      </select>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="side-title">API</div>
+      <div class="side-item active">API keys</div>
+      <div class="side-item">Usage</div>
+      <div class="side-item">Billing</div>
 
-      <label for="apiKey">Upstage API Key</label>
-      <input id="apiKey" type="password" placeholder="up_..." />
+      <div class="side-title" style="margin-top:14px">Workflow</div>
+      <div class="side-item">Basic</div>
+      <div class="side-item">Advanced</div>
+      <div class="side-item">Orchestrator</div>
+    </aside>
 
-      <button id="downloadBtn">치환된 JSON 다운로드</button>
+    <main class="content">
+      <h1>API keys</h1>
+      <p class="desc">Upstage n8n JSON Builder · 브라우저에서 API 키를 치환하고 워크플로우를 다운로드합니다.</p>
 
-      <p class="muted">치환 토큰: <code>REPLACE_WITH_YOUR_REAL_KEY</code></p>
-      <p class="muted">보안: 키는 서버로 전송되지 않고 브라우저에서만 치환됩니다.</p>
-    </section>
+      <section class="card">
+        <div class="card-head">
+          <span>Workflow Builder</span>
+          <button id="downloadBtn" class="btn">Download JSON</button>
+        </div>
+        <div class="card-body">
+          <label for="workflow">Workflow</label>
+          <select id="workflow">
+            <option value="workflow.upstage-hf-paper-summarizer.json">Basic</option>
+            <option value="workflow.upstage-hf-paper-summarizer-advanced.json">Advanced + Feedback</option>
+            <option value="workflow.research-orchestrator-pro.json">Research Orchestrator Pro</option>
+          </select>
 
-    <div class="footer">upstage-n8n.jaeyeong2026.com</div>
+          <label for="apiKey">Upstage API Key</label>
+          <input id="apiKey" type="password" placeholder="up_..." />
+
+          <p class="muted">치환 토큰: <code>REPLACE_WITH_YOUR_REAL_KEY</code></p>
+          <p class="muted">API 키는 서버에 저장되지 않고 브라우저에서만 치환됩니다.</p>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">Workflow Files</div>
+        <div class="card-body" style="padding:0">
+          <table class="simple-table">
+            <thead>
+              <tr><th>Name</th><th>Type</th><th>Run Mode</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>workflow.upstage-hf-paper-summarizer.json</td><td>Paper Summary</td><td>Manual Trigger</td></tr>
+              <tr><td>workflow.upstage-hf-paper-summarizer-advanced.json</td><td>Feedback Loop</td><td>Manual Trigger</td></tr>
+              <tr><td>workflow.research-orchestrator-pro.json</td><td>Multi-source Orchestrator</td><td>Manual Trigger</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
   </div>
 
   <script src="./app.js"></script>
