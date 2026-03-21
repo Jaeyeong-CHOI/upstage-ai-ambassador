@@ -56,6 +56,13 @@ UPSTAGE_API_KEY=your_upstage_api_key
 
 기본 샘플 입력값은 파일 안에 기본값으로 들어있어서 import 후 바로 실행 가능하다.
 
+## 안정성 개선 (이번 패치)
+
+- Upstage/Fetch HTTP 노드에 `onError: continueRegularOutput` 적용
+- 각 Parse 노드에서 에러 객체를 구조화해 반환 (`status`, `error_message`, `retry_after`)
+- 최종 집계에서 `success/failed` 카운트 제공
+- 긴 Expression을 Code 노드(`Build ... Payload`)로 분리해 n8n 파서 오류 방지
+
 ## 4) 응답 예시
 
 ```json
