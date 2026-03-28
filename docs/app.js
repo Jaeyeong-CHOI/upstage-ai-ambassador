@@ -1,8 +1,22 @@
-const workflowSelect = document.getElementById('workflow');
+// Workflow card selection
+const cards = document.querySelectorAll('.wf-card');
 const apiKeyInput = document.getElementById('apiKey');
 const downloadBtn = document.getElementById('downloadBtn');
 
 const TEMPLATE_BASE = './templates';
+
+function getSelectedWorkflow() {
+  const checked = document.querySelector('input[name="workflow"]:checked');
+  return checked ? checked.value : null;
+}
+
+cards.forEach(card => {
+  card.addEventListener('click', () => {
+    cards.forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    card.querySelector('input[type="radio"]').checked = true;
+  });
+});
 
 function escapeRegExp(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -10,12 +24,24 @@ function escapeRegExp(str) {
 
 downloadBtn.addEventListener('click', async () => {
   const key = apiKeyInput.value.trim();
-  const selected = workflowSelect.value;
+  const selected = getSelectedWorkflow();
 
   if (!key) {
-    alert('API 키를 입력해줘.');
+    apiKeyInput.focus();
+    apiKeyInput.style.borderColor = '#ef4444';
+    setTimeout(() => { apiKeyInput.style.borderColor = ''; }, 1500);
     return;
   }
+
+  if (!key.startsWith('up_')) {
+    apiKeyInput.focus();
+    apiKeyInput.style.borderColor = '#ef4444';
+    setTimeout(() => { apiKeyInput.style.borderColor = ''; }, 1500);
+    return;
+  }
+
+  downloadBtn.textContent = '준비 중...';
+  downloadBtn.disabled = true;
 
   try {
     const url = `${TEMPLATE_BASE}/${selected}`;
@@ -35,7 +61,17 @@ downloadBtn.addEventListener('click', async () => {
     a.click();
     a.remove();
     URL.revokeObjectURL(a.href);
+
+    downloadBtn.textContent = '✓ 다운로드 완료';
+    downloadBtn.classList.add('success');
+    setTimeout(() => {
+      downloadBtn.textContent = 'JSON 다운로드 →';
+      downloadBtn.classList.remove('success');
+      downloadBtn.disabled = false;
+    }, 2000);
   } catch (e) {
+    downloadBtn.textContent = 'JSON 다운로드 →';
+    downloadBtn.disabled = false;
     alert(`오류: ${e.message}`);
   }
 });
