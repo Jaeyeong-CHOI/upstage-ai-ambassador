@@ -32,93 +32,6 @@
     },
     {
       "parameters": {
-        "jsCode": "// Build today's date string, and yesterday as fallback\nconst today = new Date();\nconst fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;\nconst todayStr = fmt(today);\nconst yesterday = new Date(today);\nyesterday.setDate(yesterday.getDate() - 1);\nconst yesterdayStr = fmt(yesterday);\n\nreturn [{ json: { todayDate: todayStr, yesterdayDate: yesterdayStr } }];"
-      },
-      "name": "Prepare Date",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        480,
-        280
-      ]
-    },
-    {
-      "parameters": {
-        "url": "={{'https://huggingface.co/api/daily_papers?date=' + $json.todayDate}}",
-        "options": {
-          "timeout": 15000
-        }
-      },
-      "name": "Fetch Papers Today",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        720,
-        280
-      ],
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "jsCode": "// Robust parsing of HF API response\n// n8n HTTP Request may return data in different formats\nlet papers = [];\nconst dateInput = $item(0).$node['Prepare Date'].json;\n\ntry {\n  // Try various response formats\n  const raw = $json;\n  \n  if (Array.isArray(raw)) {\n    papers = raw;\n  } else if (raw.body && Array.isArray(raw.body)) {\n    papers = raw.body;\n  } else if (typeof raw === 'string') {\n    papers = JSON.parse(raw);\n  } else if (typeof raw.body === 'string') {\n    papers = JSON.parse(raw.body);\n  } else if (raw.data && Array.isArray(raw.data)) {\n    papers = raw.data;\n  }\n} catch (e) {\n  // Parse error - treat as empty\n}\n\nif (!Array.isArray(papers) || papers.length === 0) {\n  return [{ json: { needFallback: true, yesterdayDate: dateInput.yesterdayDate, date: dateInput.todayDate } }];\n}\n\npapers.sort((a,b) => (b.paper?.upvotes||0) - (a.paper?.upvotes||0));\nconst top = papers.slice(0, 10);\nreturn top.map(p => ({\n  json: {\n    needFallback: false,\n    date: dateInput.todayDate,\n    paper_id: p.paper?.id || '',\n    title: p.paper?.title || 'Untitled',\n    url: `https://huggingface.co/papers/${p.paper?.id}`,\n    upvotes: p.paper?.upvotes || 0, authors: (p.paper?.authors || []).map(a => a.name || a.user || \"\").filter(Boolean).slice(0,3).join(\", \")\n  }\n}));"
-      },
-      "name": "Parse Papers",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        960,
-        280
-      ]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "boolean": [
-            {
-              "value1": "={{$json.needFallback}}",
-              "value2": true
-            }
-          ]
-        }
-      },
-      "name": "Need Fallback?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
-      "position": [
-        1200,
-        280
-      ]
-    },
-    {
-      "parameters": {
-        "url": "={{'https://huggingface.co/api/daily_papers?date=' + $json.yesterdayDate}}",
-        "options": {
-          "timeout": 15000
-        }
-      },
-      "name": "Fetch Papers Yesterday",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1440,
-        180
-      ],
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "jsCode": "let papers = [];\nconst dateInput = $item(0).$node['Prepare Date'].json;\nconst dateStr = dateInput.yesterdayDate;\n\ntry {\n  const raw = $json;\n  if (Array.isArray(raw)) papers = raw;\n  else if (raw.body && Array.isArray(raw.body)) papers = raw.body;\n  else if (typeof raw === 'string') papers = JSON.parse(raw);\n  else if (typeof raw.body === 'string') papers = JSON.parse(raw.body);\n  else if (raw.data && Array.isArray(raw.data)) papers = raw.data;\n} catch (e) {}\n\nif (!Array.isArray(papers) || papers.length === 0) {\n  return [{ json: { date: dateStr, paper_id: '', title: 'No papers found', url: '#', upvotes: 0 } }];\n}\n\npapers.sort((a,b) => (b.paper?.upvotes||0) - (a.paper?.upvotes||0));\nconst top = papers.slice(0, 10);\nreturn top.map(p => ({\n  json: {\n    date: dateStr,\n    paper_id: p.paper?.id || '',\n    title: p.paper?.title || 'Untitled',\n    url: `https://huggingface.co/papers/${p.paper?.id}`,\n    upvotes: p.paper?.upvotes || 0, authors: (p.paper?.authors || []).map(a => a.name || a.user || \"\").filter(Boolean).slice(0,3).join(\", \")\n  }\n}));"
-      },
-      "name": "Parse Yesterday",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1680,
-        180
-      ]
-    },
-    {
-      "parameters": {
         "jsCode": "const all = $input.all().map(i => i.json);\nconst date = all[0]?.date || 'unknown';\n\nlet html = `<div style=\"font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:640px;margin:0 auto;padding:24px;\">`;\nhtml += `<h1 style=\"font-size:22px;color:#1a1a1a;margin-bottom:4px;\">📄 HF Daily Papers — ${date}</h1>`;\nhtml += `<p style=\"color:#6b7280;font-size:14px;margin-bottom:20px;\">오늘의 인기 논문 Top ${all.length}편</p>`;\n\nfor (let i = 0; i < all.length; i++) {\n  const p = all[i];\n  if (!p.paper_id) continue;\n  html += `<div style=\"margin-bottom:16px;padding:14px 16px;border:1px solid #e5e7eb;border-radius:10px;\">`;\n  html += `<div style=\"font-size:15px;font-weight:600;\"><a href=\"${p.url}\" style=\"color:#6c2bd9;text-decoration:none;\">${i+1}. ${p.title}</a></div>`;\n  html += `<div style=\"font-size:12px;color:#6b7280;margin-top:4px;\">⬆️ ${p.upvotes} upvotes${p.authors ? ' · ' + p.authors : ''}</div>`;\n  html += `</div>`;\n}\n\nhtml += `<hr style=\"border:none;border-top:1px solid #e5e7eb;margin:20px 0;\">`;\nhtml += `<p style=\"color:#9ca3af;font-size:12px;\">Powered by <a href=\"https://www.upstage.ai\" style=\"color:#6c2bd9;\">Upstage</a> · <a href=\"https://huggingface.co/papers\" style=\"color:#6c2bd9;\">HuggingFace Daily Papers</a></p>`;\nhtml += `</div>`;\n\nreturn [{ json: {\n  date,\n  subject: `📄 HF Daily Papers — ${date} (${all.length}편)`,\n  html,\n  count: all.length\n} }];"
       },
       "name": "Build Email",
@@ -151,6 +64,74 @@
           "name": "Gmail SMTP"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the most recent date that likely has papers\n// HF Daily Papers updates on US time, so:\n// - If it's before ~10am UTC, yesterday's papers are the latest\n// - We'll try today first, then yesterday, then 2 days ago\nconst now = new Date();\nconst dates = [];\nfor (let i = 0; i < 3; i++) {\n  const d = new Date(now);\n  d.setDate(d.getDate() - i);\n  dates.push(d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'));\n}\nreturn [{ json: { dates: dates } }];"
+      },
+      "name": "Prepare Dates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{'https://huggingface.co/api/daily_papers?date=' + $json.dates[0]}}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "name": "Fetch Day 0",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        280
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{'https://huggingface.co/api/daily_papers?date=' + $item(0).$node['Prepare Dates'].json.dates[1]}}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "name": "Fetch Day 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        480
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "name": "Merge Responses",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [
+        920,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pick the first non-empty response from today or yesterday\nconst items = $input.all().map(i => i.json);\nconst dates = items[0]?.dates || $item(0)?.$node['Prepare Dates']?.json?.dates || [];\n\nlet papers = [];\nlet usedDate = 'unknown';\n\nfor (const item of items) {\n  let arr = [];\n  try {\n    if (Array.isArray(item)) arr = item;\n    else if (item.body && Array.isArray(item.body)) arr = item.body;\n    else if (typeof item === 'string') arr = JSON.parse(item);\n    else if (typeof item.body === 'string' && item.body.startsWith('[')) arr = JSON.parse(item.body);\n    else if (item.data && Array.isArray(item.data)) arr = item.data;\n    // Check if the item itself has paper data (parsed array response)\n    else if (item.paper) arr = [item];\n  } catch (e) {}\n  \n  if (arr.length > papers.length) {\n    papers = arr;\n  }\n}\n\nif (papers.length === 0) {\n  return [{ json: { date: dates[0] || usedDate, paper_id: '', title: 'No papers available', url: '#', upvotes: 0 } }];\n}\n\n// Determine which date was used\nconst firstPaper = papers[0];\nusedDate = dates[0] || 'unknown'; // approximate\n\npapers.sort((a,b) => (b.paper?.upvotes||0) - (a.paper?.upvotes||0));\nconst top = papers.slice(0, 10);\nreturn top.map(p => ({\n  json: {\n    date: usedDate,\n    paper_id: p.paper?.id || '',\n    title: p.paper?.title || 'Untitled',\n    url: `https://huggingface.co/papers/${p.paper?.id}`,\n    upvotes: p.paper?.upvotes || 0,\n    authors: (p.paper?.authors || []).map(a => a.name || a.user || '').filter(Boolean).slice(0,3).join(', ')\n  }\n}));"
+      },
+      "name": "Pick Best Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1140,
+        380
+      ]
     }
   ],
   "connections": {
@@ -158,7 +139,7 @@
       "main": [
         [
           {
-            "node": "Prepare Date",
+            "node": "Prepare Dates",
             "type": "main",
             "index": 0
           }
@@ -169,76 +150,63 @@
       "main": [
         [
           {
-            "node": "Prepare Date",
+            "node": "Prepare Dates",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Prepare Date": {
+    "Prepare Dates": {
       "main": [
         [
           {
-            "node": "Fetch Papers Today",
+            "node": "Fetch Day 0",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Day 1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Fetch Papers Today": {
+    "Fetch Day 0": {
       "main": [
         [
           {
-            "node": "Parse Papers",
+            "node": "Merge Responses",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Parse Papers": {
+    "Fetch Day 1": {
       "main": [
         [
           {
-            "node": "Need Fallback?",
+            "node": "Merge Responses",
             "type": "main",
-            "index": 0
+            "index": 1
           }
         ]
       ]
     },
-    "Need Fallback?": {
+    "Merge Responses": {
       "main": [
         [
           {
-            "node": "Fetch Papers Yesterday",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Build Email",
+            "node": "Pick Best Results",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Fetch Papers Yesterday": {
-      "main": [
-        [
-          {
-            "node": "Parse Yesterday",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Parse Yesterday": {
+    "Pick Best Results": {
       "main": [
         [
           {
