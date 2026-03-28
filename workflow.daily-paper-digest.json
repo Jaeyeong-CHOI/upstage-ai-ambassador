@@ -44,8 +44,8 @@
     },
     {
       "parameters": {
-        "fromEmail": "={{$env.SMTP_FROM || 'your-email@gmail.com'}}",
-        "toEmail": "={{$env.DIGEST_TO || 'your-email@gmail.com'}}",
+        "fromEmail": "your-email@gmail.com",
+        "toEmail": "your-email@gmail.com",
         "subject": "={{$json.subject}}",
         "emailType": "html",
         "html": "={{$json.html}}",
