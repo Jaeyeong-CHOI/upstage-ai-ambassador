@@ -60,7 +60,7 @@
     },
     {
       "parameters": {
-        "jsCode": "let papers = [];\ntry {\n  const body = $json.body || $json;\n  if (Array.isArray(body)) papers = body;\n  else if (typeof body === 'string') papers = JSON.parse(body);\n} catch (e) { /* */ }\n\nconst dateInput = $item(0).$node['Prepare Date'].json;\n\nif (papers.length === 0) {\n  return [{ json: { needFallback: true, yesterdayDate: dateInput.yesterdayDate, date: dateInput.todayDate } }];\n}\n\npapers.sort((a,b) => (b.paper?.upvotes||0) - (a.paper?.upvotes||0));\nconst top = papers.slice(0, 5);\nreturn top.map(p => ({\n  json: {\n    needFallback: false,\n    date: dateInput.todayDate,\n    paper_id: p.paper?.id || '',\n    title: p.paper?.title || 'Untitled',\n    url: `https://huggingface.co/papers/${p.paper?.id}`,\n    upvotes: p.paper?.upvotes || 0\n  }\n}));"
+        "jsCode": "// Robust parsing of HF API response\n// n8n HTTP Request may return data in different formats\nlet papers = [];\nconst dateInput = $item(0).$node['Prepare Date'].json;\n\ntry {\n  // Try various response formats\n  const raw = $json;\n  \n  if (Array.isArray(raw)) {\n    papers = raw;\n  } else if (raw.body && Array.isArray(raw.body)) {\n    papers = raw.body;\n  } else if (typeof raw === 'string') {\n    papers = JSON.parse(raw);\n  } else if (typeof raw.body === 'string') {\n    papers = JSON.parse(raw.body);\n  } else if (raw.data && Array.isArray(raw.data)) {\n    papers = raw.data;\n  }\n} catch (e) {\n  // Parse error - treat as empty\n}\n\nif (!Array.isArray(papers) || papers.length === 0) {\n  return [{ json: { needFallback: true, yesterdayDate: dateInput.yesterdayDate, date: dateInput.todayDate } }];\n}\n\npapers.sort((a,b) => (b.paper?.upvotes||0) - (a.paper?.upvotes||0));\nconst top = papers.slice(0, 5);\nreturn top.map(p => ({\n  json: {\n    needFallback: false,\n    date: dateInput.todayDate,\n    paper_id: p.paper?.id || '',\n    title: p.paper?.title || 'Untitled',\n    url: `https://huggingface.co/papers/${p.paper?.id}`,\n    upvotes: p.paper?.upvotes || 0\n  }\n}));"
       },
       "name": "Parse Papers",
       "type": "n8n-nodes-base.code",
@@ -107,7 +107,7 @@
     },
     {
       "parameters": {
-        "jsCode": "let papers = [];\ntry {\n  const body = $json.body || $json;\n  if (Array.isArray(body)) papers = body;\n  else if (typeof body === 'string') papers = JSON.parse(body);\n} catch (e) { /* */ }\n\nconst dateInput = $item(0).$node['Prepare Date'].json;\nconst dateStr = dateInput.yesterdayDate;\n\nif (papers.length === 0) {\n  return [{ json: { date: dateStr, paper_id: '', title: 'No papers found', url: '#', upvotes: 0 } }];\n}\n\npapers.sort((a,b) => (b.paper?.upvotes||0) - (a.paper?.upvotes||0));\nconst top = papers.slice(0, 5);\nreturn top.map(p => ({\n  json: {\n    date: dateStr,\n    paper_id: p.paper?.id || '',\n    title: p.paper?.title || 'Untitled',\n    url: `https://huggingface.co/papers/${p.paper?.id}`,\n    upvotes: p.paper?.upvotes || 0\n  }\n}));"
+        "jsCode": "let papers = [];\nconst dateInput = $item(0).$node['Prepare Date'].json;\nconst dateStr = dateInput.yesterdayDate;\n\ntry {\n  const raw = $json;\n  if (Array.isArray(raw)) papers = raw;\n  else if (raw.body && Array.isArray(raw.body)) papers = raw.body;\n  else if (typeof raw === 'string') papers = JSON.parse(raw);\n  else if (typeof raw.body === 'string') papers = JSON.parse(raw.body);\n  else if (raw.data && Array.isArray(raw.data)) papers = raw.data;\n} catch (e) {}\n\nif (!Array.isArray(papers) || papers.length === 0) {\n  return [{ json: { date: dateStr, paper_id: '', title: 'No papers found', url: '#', upvotes: 0 } }];\n}\n\npapers.sort((a,b) => (b.paper?.upvotes||0) - (a.paper?.upvotes||0));\nconst top = papers.slice(0, 5);\nreturn top.map(p => ({\n  json: {\n    date: dateStr,\n    paper_id: p.paper?.id || '',\n    title: p.paper?.title || 'Untitled',\n    url: `https://huggingface.co/papers/${p.paper?.id}`,\n    upvotes: p.paper?.upvotes || 0\n  }\n}));"
       },
       "name": "Parse Yesterday",
       "type": "n8n-nodes-base.code",
@@ -121,7 +121,7 @@
       "parameters": {
         "url": "={{'https://r.jina.ai/' + $json.url}}",
         "options": {
-          "timeout": 20000
+          "timeout": 30000
         }
       },
       "name": "Extract Paper Text",
@@ -172,7 +172,7 @@
               "fullResponse": false
             }
           },
-          "timeout": 60000
+          "timeout": 120000
         }
       },
       "name": "Upstage Analyze",
@@ -235,7 +235,7 @@
               "fullResponse": false
             }
           },
-          "timeout": 60000
+          "timeout": 120000
         }
       },
       "name": "Upstage Synthesize",

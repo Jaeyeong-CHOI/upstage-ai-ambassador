@@ -4,20 +4,31 @@
     {
       "parameters": {
         "rule": {
-          "interval": [{ "triggerAtHour": 8, "triggerAtMinute": 30 }]
+          "interval": [
+            {
+              "triggerAtHour": 8,
+              "triggerAtMinute": 30
+            }
+          ]
         }
       },
       "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [240, 280]
+      "position": [
+        240,
+        280
+      ]
     },
     {
       "parameters": {},
       "name": "Manual Trigger",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [240, 480]
+      "position": [
+        240,
+        480
+      ]
     },
     {
       "parameters": {
@@ -26,58 +37,85 @@
       "name": "Prepare Date",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [480, 280]
+      "position": [
+        480,
+        280
+      ]
     },
     {
       "parameters": {
         "url": "={{'https://huggingface.co/api/daily_papers?date=' + $json.todayDate}}",
-        "options": { "timeout": 15000 }
+        "options": {
+          "timeout": 15000
+        }
       },
       "name": "Fetch Papers Today",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [720, 280],
+      "position": [
+        720,
+        280
+      ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "// Parse HF API response, fallback to yesterday if empty\nlet papers = [];\n\ntry {\n  const body = $json.body || $json;\n  if (Array.isArray(body)) {\n    papers = body;\n  } else if (typeof body === 'string') {\n    papers = JSON.parse(body);\n  }\n} catch (e) { /* will fallback */ }\n\nconst dateInput = $item(0).$node['Prepare Date'].json;\n\nif (papers.length === 0) {\n  // Return signal to try yesterday\n  return [{ json: { needFallback: true, yesterdayDate: dateInput.yesterdayDate, date: dateInput.todayDate } }];\n}\n\n// Sort by upvotes, take top 10\npapers.sort((a,b) => (b.paper?.upvotes||0) - (a.paper?.upvotes||0));\nconst top = papers.slice(0, 10);\n\nreturn top.map(p => ({\n  json: {\n    needFallback: false,\n    date: dateInput.todayDate,\n    paper_id: p.paper?.id || '',\n    title: p.paper?.title || 'Untitled',\n    url: `https://huggingface.co/papers/${p.paper?.id}`,\n    upvotes: p.paper?.upvotes || 0,\n    authors: (p.paper?.authors || []).map(a => a.name || a.user || '').filter(Boolean).slice(0,3).join(', ')\n  }\n}));"
+        "jsCode": "// Robust parsing of HF API response\n// n8n HTTP Request may return data in different formats\nlet papers = [];\nconst dateInput = $item(0).$node['Prepare Date'].json;\n\ntry {\n  // Try various response formats\n  const raw = $json;\n  \n  if (Array.isArray(raw)) {\n    papers = raw;\n  } else if (raw.body && Array.isArray(raw.body)) {\n    papers = raw.body;\n  } else if (typeof raw === 'string') {\n    papers = JSON.parse(raw);\n  } else if (typeof raw.body === 'string') {\n    papers = JSON.parse(raw.body);\n  } else if (raw.data && Array.isArray(raw.data)) {\n    papers = raw.data;\n  }\n} catch (e) {\n  // Parse error - treat as empty\n}\n\nif (!Array.isArray(papers) || papers.length === 0) {\n  return [{ json: { needFallback: true, yesterdayDate: dateInput.yesterdayDate, date: dateInput.todayDate } }];\n}\n\npapers.sort((a,b) => (b.paper?.upvotes||0) - (a.paper?.upvotes||0));\nconst top = papers.slice(0, 10);\nreturn top.map(p => ({\n  json: {\n    needFallback: false,\n    date: dateInput.todayDate,\n    paper_id: p.paper?.id || '',\n    title: p.paper?.title || 'Untitled',\n    url: `https://huggingface.co/papers/${p.paper?.id}`,\n    upvotes: p.paper?.upvotes || 0, authors: (p.paper?.authors || []).map(a => a.name || a.user || \"\").filter(Boolean).slice(0,3).join(\", \")\n  }\n}));"
       },
       "name": "Parse Papers",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [960, 280]
+      "position": [
+        960,
+        280
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "boolean": [{ "value1": "={{$json.needFallback}}", "value2": true }]
+          "boolean": [
+            {
+              "value1": "={{$json.needFallback}}",
+              "value2": true
+            }
+          ]
         }
       },
       "name": "Need Fallback?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [1200, 280]
+      "position": [
+        1200,
+        280
+      ]
     },
     {
       "parameters": {
         "url": "={{'https://huggingface.co/api/daily_papers?date=' + $json.yesterdayDate}}",
-        "options": { "timeout": 15000 }
+        "options": {
+          "timeout": 15000
+        }
       },
       "name": "Fetch Papers Yesterday",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1440, 180],
+      "position": [
+        1440,
+        180
+      ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "let papers = [];\ntry {\n  const body = $json.body || $json;\n  if (Array.isArray(body)) papers = body;\n  else if (typeof body === 'string') papers = JSON.parse(body);\n} catch (e) { /* */ }\n\nconst dateInput = $item(0).$node['Prepare Date'].json;\nconst dateStr = dateInput.yesterdayDate;\n\nif (papers.length === 0) {\n  return [{ json: { date: dateStr, paper_id: '', title: 'No papers found', url: '#', upvotes: 0, authors: '' } }];\n}\n\npapers.sort((a,b) => (b.paper?.upvotes||0) - (a.paper?.upvotes||0));\nconst top = papers.slice(0, 10);\n\nreturn top.map(p => ({\n  json: {\n    date: dateStr,\n    paper_id: p.paper?.id || '',\n    title: p.paper?.title || 'Untitled',\n    url: `https://huggingface.co/papers/${p.paper?.id}`,\n    upvotes: p.paper?.upvotes || 0,\n    authors: (p.paper?.authors || []).map(a => a.name || a.user || '').filter(Boolean).slice(0,3).join(', ')\n  }\n}));"
+        "jsCode": "let papers = [];\nconst dateInput = $item(0).$node['Prepare Date'].json;\nconst dateStr = dateInput.yesterdayDate;\n\ntry {\n  const raw = $json;\n  if (Array.isArray(raw)) papers = raw;\n  else if (raw.body && Array.isArray(raw.body)) papers = raw.body;\n  else if (typeof raw === 'string') papers = JSON.parse(raw);\n  else if (typeof raw.body === 'string') papers = JSON.parse(raw.body);\n  else if (raw.data && Array.isArray(raw.data)) papers = raw.data;\n} catch (e) {}\n\nif (!Array.isArray(papers) || papers.length === 0) {\n  return [{ json: { date: dateStr, paper_id: '', title: 'No papers found', url: '#', upvotes: 0 } }];\n}\n\npapers.sort((a,b) => (b.paper?.upvotes||0) - (a.paper?.upvotes||0));\nconst top = papers.slice(0, 10);\nreturn top.map(p => ({\n  json: {\n    date: dateStr,\n    paper_id: p.paper?.id || '',\n    title: p.paper?.title || 'Untitled',\n    url: `https://huggingface.co/papers/${p.paper?.id}`,\n    upvotes: p.paper?.upvotes || 0, authors: (p.paper?.authors || []).map(a => a.name || a.user || \"\").filter(Boolean).slice(0,3).join(\", \")\n  }\n}));"
       },
       "name": "Parse Yesterday",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1680, 180]
+      "position": [
+        1680,
+        180
+      ]
     },
     {
       "parameters": {
@@ -86,7 +124,10 @@
       "name": "Build Email",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1920, 280]
+      "position": [
+        1920,
+        280
+      ]
     },
     {
       "parameters": {
@@ -100,7 +141,10 @@
       "name": "Send Email",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
-      "position": [2160, 280],
+      "position": [
+        2160,
+        280
+      ],
       "credentials": {
         "smtp": {
           "id": "REPLACE_SMTP_CREDENTIAL_ID",
@@ -110,21 +154,115 @@
     }
   ],
   "connections": {
-    "Schedule Trigger": { "main": [[{ "node": "Prepare Date", "type": "main", "index": 0 }]] },
-    "Manual Trigger": { "main": [[{ "node": "Prepare Date", "type": "main", "index": 0 }]] },
-    "Prepare Date": { "main": [[{ "node": "Fetch Papers Today", "type": "main", "index": 0 }]] },
-    "Fetch Papers Today": { "main": [[{ "node": "Parse Papers", "type": "main", "index": 0 }]] },
-    "Parse Papers": { "main": [[{ "node": "Need Fallback?", "type": "main", "index": 0 }]] },
-    "Need Fallback?": {
+    "Schedule Trigger": {
       "main": [
-        [{ "node": "Fetch Papers Yesterday", "type": "main", "index": 0 }],
-        [{ "node": "Build Email", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Prepare Date",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Fetch Papers Yesterday": { "main": [[{ "node": "Parse Yesterday", "type": "main", "index": 0 }]] },
-    "Parse Yesterday": { "main": [[{ "node": "Build Email", "type": "main", "index": 0 }]] },
-    "Build Email": { "main": [[{ "node": "Send Email", "type": "main", "index": 0 }]] }
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare Date",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Date": {
+      "main": [
+        [
+          {
+            "node": "Fetch Papers Today",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Papers Today": {
+      "main": [
+        [
+          {
+            "node": "Parse Papers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Papers": {
+      "main": [
+        [
+          {
+            "node": "Need Fallback?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Need Fallback?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Papers Yesterday",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Papers Yesterday": {
+      "main": [
+        [
+          {
+            "node": "Parse Yesterday",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Yesterday": {
+      "main": [
+        [
+          {
+            "node": "Build Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Email": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
   "active": false,
-  "settings": { "executionOrder": "v1" }
+  "settings": {
+    "executionOrder": "v1"
+  }
 }
