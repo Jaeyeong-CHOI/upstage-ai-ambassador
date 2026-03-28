@@ -4,20 +4,31 @@
     {
       "parameters": {
         "rule": {
-          "interval": [{ "triggerAtHour": 8, "triggerAtMinute": 30 }]
+          "interval": [
+            {
+              "triggerAtHour": 8,
+              "triggerAtMinute": 30
+            }
+          ]
         }
       },
       "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [240, 280]
+      "position": [
+        240,
+        280
+      ]
     },
     {
       "parameters": {},
       "name": "Manual Trigger",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [240, 480]
+      "position": [
+        240,
+        480
+      ]
     },
     {
       "parameters": {
@@ -26,17 +37,25 @@
       "name": "Fetch Daily Papers",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [480, 280]
+      "position": [
+        480,
+        280
+      ]
     },
     {
       "parameters": {
         "url": "={{'https://r.jina.ai/' + $json.url}}",
-        "options": { "timeout": 20000 }
+        "options": {
+          "timeout": 20000
+        }
       },
       "name": "Extract Paper Text",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [720, 280],
+      "position": [
+        720,
+        280
+      ],
       "onError": "continueRegularOutput"
     },
     {
@@ -46,7 +65,10 @@
       "name": "Build Summary Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [960, 280]
+      "position": [
+        960,
+        280
+      ]
     },
     {
       "parameters": {
@@ -55,30 +77,49 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "={{'Bearer ' + ($env.UPSTAGE_API_KEY || 'REPLACE_WITH_YOUR_REAL_KEY')}}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + ($env.UPSTAGE_API_KEY || 'REPLACE_WITH_YOUR_REAL_KEY')}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
         "body": "={{$json.upstage_payload}}",
-        "options": { "response": { "response": { "fullResponse": false } }, "timeout": 60000 }
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          },
+          "timeout": 60000
+        }
       },
       "name": "Upstage Summarize",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1200, 280],
+      "position": [
+        1200,
+        280
+      ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "const base = {\n  paper_id: $item(0).$node['Fetch Daily Papers'].json.paper_id,\n  title: $item(0).$node['Fetch Daily Papers'].json.title,\n  url: $item(0).$node['Fetch Daily Papers'].json.url,\n  upvotes: $item(0).$node['Fetch Daily Papers'].json.upvotes,\n  date: $item(0).$node['Fetch Daily Papers'].json.date\n};\n\nif ($json.error) {\n  return [{ json: { ...base, ok: false, error_type: 'upstage_error', error_message: $json.error?.message || 'Unknown' } }];\n}\n\nconst content = $json.choices?.[0]?.message?.content || '{}';\nlet parsed;\ntry { parsed = JSON.parse(content); } catch { parsed = { raw: content }; }\nreturn [{ json: { ...base, ok: true, summary: parsed } }];"
+        "jsCode": "const base = {\n  paper_id: $item(0).$node['Build Summary Payload'].json.paper_id,\n  title: $item(0).$node['Build Summary Payload'].json.title,\n  url: $item(0).$node['Build Summary Payload'].json.url,\n  upvotes: $item(0).$node['Build Summary Payload'].json.upvotes,\n  date: $item(0).$node['Build Summary Payload'].json.date\n};\n\nif ($json.error) {\n  return [{ json: { ...base, ok: false, error_type: 'upstage_error', error_message: $json.error?.message || 'Unknown' } }];\n}\n\nconst content = $json.choices?.[0]?.message?.content || '{}';\nlet parsed;\ntry { parsed = JSON.parse(content); } catch { parsed = { raw: content }; }\nreturn [{ json: { ...base, ok: true, summary: parsed } }];"
       },
       "name": "Parse Result",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1440, 280]
+      "position": [
+        1440,
+        280
+      ]
     },
     {
       "parameters": {
@@ -87,7 +128,10 @@
       "name": "Build Email",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1680, 280]
+      "position": [
+        1680,
+        280
+      ]
     },
     {
       "parameters": {
@@ -101,7 +145,10 @@
       "name": "Send Email",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
-      "position": [1920, 280],
+      "position": [
+        1920,
+        280
+      ],
       "credentials": {
         "smtp": {
           "id": "REPLACE_SMTP_CREDENTIAL_ID",
@@ -111,15 +158,97 @@
     }
   ],
   "connections": {
-    "Schedule Trigger": { "main": [[{ "node": "Fetch Daily Papers", "type": "main", "index": 0 }]] },
-    "Manual Trigger": { "main": [[{ "node": "Fetch Daily Papers", "type": "main", "index": 0 }]] },
-    "Fetch Daily Papers": { "main": [[{ "node": "Extract Paper Text", "type": "main", "index": 0 }]] },
-    "Extract Paper Text": { "main": [[{ "node": "Build Summary Payload", "type": "main", "index": 0 }]] },
-    "Build Summary Payload": { "main": [[{ "node": "Upstage Summarize", "type": "main", "index": 0 }]] },
-    "Upstage Summarize": { "main": [[{ "node": "Parse Result", "type": "main", "index": 0 }]] },
-    "Parse Result": { "main": [[{ "node": "Build Email", "type": "main", "index": 0 }]] },
-    "Build Email": { "main": [[{ "node": "Send Email", "type": "main", "index": 0 }]] }
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Daily Papers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Daily Papers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Daily Papers": {
+      "main": [
+        [
+          {
+            "node": "Extract Paper Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Paper Text": {
+      "main": [
+        [
+          {
+            "node": "Build Summary Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Summary Payload": {
+      "main": [
+        [
+          {
+            "node": "Upstage Summarize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upstage Summarize": {
+      "main": [
+        [
+          {
+            "node": "Parse Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Result": {
+      "main": [
+        [
+          {
+            "node": "Build Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Email": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
   "active": false,
-  "settings": { "executionOrder": "v1" }
+  "settings": {
+    "executionOrder": "v1"
+  }
 }

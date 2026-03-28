@@ -4,20 +4,31 @@
     {
       "parameters": {
         "rule": {
-          "interval": [{ "triggerAtHour": 9, "triggerAtMinute": 0 }]
+          "interval": [
+            {
+              "triggerAtHour": 9,
+              "triggerAtMinute": 0
+            }
+          ]
         }
       },
       "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [240, 280]
+      "position": [
+        240,
+        280
+      ]
     },
     {
       "parameters": {},
       "name": "Manual Trigger",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [240, 480]
+      "position": [
+        240,
+        480
+      ]
     },
     {
       "parameters": {
@@ -26,17 +37,25 @@
       "name": "Fetch Daily Papers",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [480, 280]
+      "position": [
+        480,
+        280
+      ]
     },
     {
       "parameters": {
         "url": "={{'https://r.jina.ai/' + $json.url}}",
-        "options": { "timeout": 20000 }
+        "options": {
+          "timeout": 20000
+        }
       },
       "name": "Extract Paper Text",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [720, 280],
+      "position": [
+        720,
+        280
+      ],
       "onError": "continueRegularOutput"
     },
     {
@@ -46,7 +65,10 @@
       "name": "Build Analysis Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [960, 280]
+      "position": [
+        960,
+        280
+      ]
     },
     {
       "parameters": {
@@ -55,20 +77,36 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "={{'Bearer ' + ($env.UPSTAGE_API_KEY || 'REPLACE_WITH_YOUR_REAL_KEY')}}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + ($env.UPSTAGE_API_KEY || 'REPLACE_WITH_YOUR_REAL_KEY')}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
         "body": "={{$json.upstage_payload}}",
-        "options": { "response": { "response": { "fullResponse": false } }, "timeout": 60000 }
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          },
+          "timeout": 60000
+        }
       },
       "name": "Upstage Analyze",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1200, 280],
+      "position": [
+        1200,
+        280
+      ],
       "onError": "continueRegularOutput"
     },
     {
@@ -78,7 +116,10 @@
       "name": "Parse Analysis",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1440, 280]
+      "position": [
+        1440,
+        280
+      ]
     },
     {
       "parameters": {
@@ -87,7 +128,10 @@
       "name": "Collect & Build Synthesis",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1680, 280]
+      "position": [
+        1680,
+        280
+      ]
     },
     {
       "parameters": {
@@ -96,20 +140,36 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "={{'Bearer ' + ($env.UPSTAGE_API_KEY || 'REPLACE_WITH_YOUR_REAL_KEY')}}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + ($env.UPSTAGE_API_KEY || 'REPLACE_WITH_YOUR_REAL_KEY')}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
         "body": "={{$json.synth_payload}}",
-        "options": { "response": { "response": { "fullResponse": false } }, "timeout": 60000 }
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          },
+          "timeout": 60000
+        }
       },
       "name": "Upstage Synthesize",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1920, 280],
+      "position": [
+        1920,
+        280
+      ],
       "onError": "continueRegularOutput"
     },
     {
@@ -119,7 +179,10 @@
       "name": "Build Briefing Email",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2160, 280]
+      "position": [
+        2160,
+        280
+      ]
     },
     {
       "parameters": {
@@ -133,7 +196,10 @@
       "name": "Send Email",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
-      "position": [2400, 280],
+      "position": [
+        2400,
+        280
+      ],
       "credentials": {
         "smtp": {
           "id": "REPLACE_SMTP_CREDENTIAL_ID",
@@ -143,17 +209,119 @@
     }
   ],
   "connections": {
-    "Schedule Trigger": { "main": [[{ "node": "Fetch Daily Papers", "type": "main", "index": 0 }]] },
-    "Manual Trigger": { "main": [[{ "node": "Fetch Daily Papers", "type": "main", "index": 0 }]] },
-    "Fetch Daily Papers": { "main": [[{ "node": "Extract Paper Text", "type": "main", "index": 0 }]] },
-    "Extract Paper Text": { "main": [[{ "node": "Build Analysis Payload", "type": "main", "index": 0 }]] },
-    "Build Analysis Payload": { "main": [[{ "node": "Upstage Analyze", "type": "main", "index": 0 }]] },
-    "Upstage Analyze": { "main": [[{ "node": "Parse Analysis", "type": "main", "index": 0 }]] },
-    "Parse Analysis": { "main": [[{ "node": "Collect & Build Synthesis", "type": "main", "index": 0 }]] },
-    "Collect & Build Synthesis": { "main": [[{ "node": "Upstage Synthesize", "type": "main", "index": 0 }]] },
-    "Upstage Synthesize": { "main": [[{ "node": "Build Briefing Email", "type": "main", "index": 0 }]] },
-    "Build Briefing Email": { "main": [[{ "node": "Send Email", "type": "main", "index": 0 }]] }
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Daily Papers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Daily Papers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Daily Papers": {
+      "main": [
+        [
+          {
+            "node": "Extract Paper Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Paper Text": {
+      "main": [
+        [
+          {
+            "node": "Build Analysis Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Analysis Payload": {
+      "main": [
+        [
+          {
+            "node": "Upstage Analyze",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upstage Analyze": {
+      "main": [
+        [
+          {
+            "node": "Parse Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Analysis": {
+      "main": [
+        [
+          {
+            "node": "Collect & Build Synthesis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect & Build Synthesis": {
+      "main": [
+        [
+          {
+            "node": "Upstage Synthesize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upstage Synthesize": {
+      "main": [
+        [
+          {
+            "node": "Build Briefing Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Briefing Email": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
   "active": false,
-  "settings": { "executionOrder": "v1" }
+  "settings": {
+    "executionOrder": "v1"
+  }
 }
