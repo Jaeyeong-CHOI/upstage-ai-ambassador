@@ -1,9 +1,14 @@
-// Workflow card selection
 const cards = document.querySelectorAll('.wf-card');
 const apiKeyInput = document.getElementById('apiKey');
 const downloadBtn = document.getElementById('downloadBtn');
 
 const TEMPLATE_BASE = './templates';
+
+// Workflows that require API key replacement
+const NEEDS_KEY = new Set([
+  'workflow.daily-paper-summary.json',
+  'workflow.research-briefing.json'
+]);
 
 function getSelectedWorkflow() {
   const checked = document.querySelector('input[name="workflow"]:checked');
@@ -25,15 +30,16 @@ function escapeRegExp(str) {
 downloadBtn.addEventListener('click', async () => {
   const key = apiKeyInput.value.trim();
   const selected = getSelectedWorkflow();
+  const requiresKey = NEEDS_KEY.has(selected);
 
-  if (!key) {
+  if (requiresKey && !key) {
     apiKeyInput.focus();
     apiKeyInput.style.borderColor = '#ef4444';
     setTimeout(() => { apiKeyInput.style.borderColor = ''; }, 1500);
     return;
   }
 
-  if (!key.startsWith('up_')) {
+  if (requiresKey && !key.startsWith('up_')) {
     apiKeyInput.focus();
     apiKeyInput.style.borderColor = '#ef4444';
     setTimeout(() => { apiKeyInput.style.borderColor = ''; }, 1500);
@@ -45,15 +51,18 @@ downloadBtn.addEventListener('click', async () => {
 
   try {
     const url = `${TEMPLATE_BASE}/${selected}`;
-    const template = await fetch(url, { cache: 'no-store' }).then(r => {
+    let template = await fetch(url, { cache: 'no-store' }).then(r => {
       if (!r.ok) throw new Error(`템플릿 로드 실패: ${r.status}`);
       return r.text();
     });
 
-    const token = 'REPLACE_WITH_YOUR_REAL_KEY';
-    const replaced = template.replace(new RegExp(escapeRegExp(token), 'g'), key);
+    // Replace API key placeholder if needed
+    if (requiresKey && key) {
+      const token = 'REPLACE_WITH_YOUR_REAL_KEY';
+      template = template.replace(new RegExp(escapeRegExp(token), 'g'), key);
+    }
 
-    const blob = new Blob([replaced], { type: 'application/json' });
+    const blob = new Blob([template], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = selected.replace('.json', '.filled.json');

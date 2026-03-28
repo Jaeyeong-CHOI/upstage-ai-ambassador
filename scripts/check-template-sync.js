@@ -1,10 +1,9 @@
 const fs = require('fs');
 
 const files = [
-  'workflow.upstage-hf-paper-summarizer.json',
-  'workflow.upstage-hf-paper-summarizer-advanced.json',
-  'workflow.research-orchestrator-pro.json',
-  'workflow.upstage-daily-paper-digest.json',
+  'workflow.daily-paper-digest.json',
+  'workflow.daily-paper-summary.json',
+  'workflow.research-briefing.json',
 ];
 
 let failed = false;
